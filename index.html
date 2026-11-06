@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#183A54">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <meta name="description" content="ALMA: Análisis Local del Medio Ambiente. Monitoreo climático y ambiental del Río Luján y Riachuelo-Matanza.">
+  <title>ALMA | Análisis Local del Medio Ambiente</title>
+  <link rel="preconnect" href="https://unpkg.com">
+  <link rel="preconnect" href="https://tile.openstreetmap.org">
+  <link rel="preconnect" href="https://api.open-meteo.com">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" onerror="this.onerror=null;this.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css'">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#inicio" aria-label="ALMA Inicio" data-nav="inicio">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 64 64"><circle cx="29" cy="29" r="23" fill="#D7F1EF" stroke="#269E9B" stroke-width="3"/><path d="M8 31c8-8 15 7 23 0s14-5 20 0" fill="none" stroke="#269E9B" stroke-width="4" stroke-linecap="round"/><path d="M35 11c-7 9-6 17 1 23 1-8 8-12 14-13-2-5-8-9-15-10Z" fill="#7EAB61"/><path d="M30 51c10-1 17-6 20-15-11 1-18 5-20 15Z" fill="#4C733B"/></svg>
+      </span>
+      <span class="brand-copy"><strong>ALMA</strong><small>Análisis Local del Medio Ambiente</small></span>
+    </a>
+    <nav class="main-nav" aria-label="Navegación principal">
+      <button class="nav-button active" data-nav="inicio"><span>⌂</span> Inicio</button>
+      <button class="nav-button" data-nav="lujan"><span>≋</span> Río Luján</button>
+      <button class="nav-button" data-nav="matanza"><span>♧</span> Riachuelo Matanza</button>
+    </nav>
+    <div class="top-actions">
+      <span class="live-pill"><i></i> Datos en actualización</span>
+      <button class="icon-button" id="refreshAll" title="Actualizar datos" aria-label="Actualizar datos">↻</button>
+      <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú">☰</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- INICIO / SUPER NIÑO -->
+    <section class="view active" id="view-inicio">
+      <div class="page-heading home-heading">
+        <div><span class="eyebrow"><i class="pulse-dot"></i> MONITOREO CLIMÁTICO</span><h1>Monitoreo del fenómeno <em>El Niño</em></h1><p>Explorá la Tierra real en 3D. Arrastrá para girar, usá la rueda para acercar y seleccioná cualquier punto para consultar sus condiciones.</p></div>
+        <div class="update-label" id="homeUpdated">Consultando fuentes…</div>
+      </div>
+      <div class="home-grid">
+        <article class="panel globe-panel">
+          <div class="panel-heading"><div><h2>Globo terráqueo real · 3D</h2><p>Clic en cualquier punto del planeta para consultar el océano y la zona</p></div><span class="data-tag">NOAA · OISST diario</span></div>
+          <div class="globe-wrap"><div id="globeViz" aria-label="Globo terráqueo interactivo"></div><div class="globe-loading" id="globeFallback">Cargando globo 3D…</div>
+            <div class="globe-tools"><button id="globeRotate" class="round-tool" title="Pausar o reanudar rotación">Ⅱ</button><button id="globeZoomIn" class="round-tool" title="Acercar">＋</button><button id="globeZoomOut" class="round-tool" title="Alejar">−</button><button id="globeReset" class="round-tool" title="Volver a la vista del Pacífico">◎</button></div>
+          </div>
+          <div class="map-legend"><span><i class="legend-dot teal"></i> Niño 1+2</span><span><i class="legend-dot blue"></i> Niño 3.4</span><span><i class="legend-dot orange"></i> Punto seleccionado</span><span><i class="legend-dot cold"></i> Anomalía fría</span><span><i class="legend-dot warm"></i> Anomalía cálida</span></div><div class="enso-layer-caption" id="ensoLayerStatus">Cargando capa diaria de anomalías NOAA para el Pacífico ecuatorial…</div>
+          <div class="zone-shortcuts" id="climateShortcuts">
+            <button class="zone-chip selected" data-climate="nino34">Niño 3.4 · Pacífico central</button>
+            <button class="zone-chip" data-climate="nino12">Niño 1+2 · Costa de Sudamérica</button>
+            <button class="zone-chip" data-climate="sudamerica">Sudamérica · referencia</button>
+          </div>
+        </article>
+
+        <aside class="home-side">
+          <article class="panel selected-panel">
+            <div class="panel-heading"><div><span class="eyebrow">ZONA SELECCIONADA</span><h2 id="climateZoneTitle">Niño 3.4 · Pacífico central</h2></div><span class="pin-icon">⌖</span></div>
+            <p class="muted" id="climateZoneDescription">Región clave para el seguimiento del ENSO.</p><div class="selection-coordinates" id="selectionCoordinates">Latitud: 0.00° · Longitud: 120.00° O</div>
+            <div class="metric-grid two">
+              <div class="metric-card aqua"><span>Temperatura superficial del mar</span><strong id="sstValue">— °C</strong><small id="sstLabel">Consultando dato marino…</small></div>
+              <div class="metric-card green"><span>Anomalía diaria del mar · NOAA</span><strong id="sstAnomalyValue">— °C</strong><small id="sstAnomalyDate">Esperando punto del océano…</small></div>
+            </div>
+            <div class="source-note" id="sstAnomalySource">Anomalía NOAA OISST: análisis diario de temperatura superficial del mar, con demora aproximada de un día. Al seleccionar tierra puede no haber dato marino.</div><div class="oni-context"><strong>Índice ONI oficial:</strong> <span id="oniValue">N/D</span> <span id="oniPeriod">promedio trimestral NOAA</span><div id="oniSource">El ONI no es una medición instantánea.</div></div>
+          </article>
+          <article class="panel weather-panel">
+            <div class="panel-heading"><div><h2>Tiempo en la región</h2><p id="weatherPlace">Referencia: Buenos Aires</p></div><span class="weather-symbol" id="weatherIcon">☁</span></div>
+            <div class="weather-main"><strong id="weatherTemp">—°</strong><span id="weatherSummary">Consultando pronóstico…</span></div>
+            <div class="weather-stats"><div><small>Precipitación</small><strong id="weatherRain">— mm</strong></div><div><small>Viento</small><strong id="weatherWind">— km/h</strong></div><div><small>Humedad</small><strong id="weatherHumidity">—%</strong></div></div>
+          </article>
+          <article class="panel advice-panel">
+            <div class="panel-heading"><h2>Recomendaciones y advertencias</h2><span class="advice-icon">✦</span></div>
+            <div id="climateAdvice" class="advice-content"><p>Se mostrarán recomendaciones según las condiciones meteorológicas de la zona.</p></div>
+            <div class="small-disclaimer">La influencia de El Niño es regional y probabilística; no permite anticipar por sí sola un evento puntual.</div>
+          </article>
+        </aside>
+      </div>
+      <div class="info-strip"><span class="info-icon">i</span><span><strong>¿Qué estás viendo?</strong> La anomalía diaria OISST permite consultar el mar por coordenada. El ONI es otro índice: usa promedios trimestrales y se actualiza mensualmente.</span><a href="https://www.cpc.ncep.noaa.gov/data/indices/" target="_blank" rel="noopener">Fuente NOAA ↗</a></div>
+    </section>
+
+    <!-- RIO LUJAN -->
+    <section class="view" id="view-lujan">
+      <div class="page-heading river-heading"><div><span class="eyebrow">MONITOREO DE CUENCA</span><h1>Río <em>Luján</em></h1><p>Seguimiento por sectores, estado del tiempo y puntos de atención ambiental.</p></div><span class="river-badge">≋ Cuenca del Luján</span></div>
+      <div class="river-layout">
+        <article class="panel map-panel">
+          <div class="panel-heading"><div><h2>Mapa del Río Luján</h2><p>Elegí un marcador para cambiar la información</p></div><button class="layer-button" id="layersLujan">Capas ▾</button></div>
+          <div id="mapLujan" class="leaflet-map" aria-label="Mapa interactivo del Río Luján"></div>
+          <div class="map-footer"><span><i class="legend-dot green"></i> Referencia baja</span><span><i class="legend-dot orange"></i> Referencia media</span><span><i class="legend-dot red"></i> Atención</span><span class="muted">Ubicaciones esquemáticas</span></div>
+        </article>
+        <aside class="river-side" id="lujanInfo"></aside>
+      </div>
+      <div class="bottom-note"><strong>Nota sobre calidad del agua:</strong> no hay sensores de calidad conectados en este prototipo. Los valores de contaminación y nivel indicados son demostrativos; el tiempo sí se consulta a Open-Meteo para la zona elegida.</div>
+    </section>
+
+    <!-- RIACHUELO MATANZA -->
+    <section class="view" id="view-matanza">
+      <div class="page-heading river-heading"><div><span class="eyebrow">MONITOREO DE CUENCA</span><h1>Riachuelo–<em>Matanza</em></h1><p>Observación de la contaminación, la calidad del agua y las zonas de riesgo.</p></div><span class="river-badge">⌖ Cuenca Matanza-Riachuelo</span></div>
+      <div class="river-layout">
+        <article class="panel map-panel">
+          <div class="panel-heading"><div><h2>Mapa de la cuenca</h2><p>Seleccioná una estación para consultar sus referencias</p></div><button class="layer-button" id="layersMatanza">Capas ▾</button></div>
+          <div id="mapMatanza" class="leaflet-map" aria-label="Mapa interactivo de la cuenca Matanza-Riachuelo"></div>
+          <div class="map-footer"><span><i class="legend-dot green"></i> Cuenca alta</span><span><i class="legend-dot orange"></i> Cuenca media</span><span><i class="legend-dot red"></i> Cuenca baja</span><span class="muted">Recorrido esquemático</span></div>
+        </article>
+        <aside class="river-side" id="matanzaInfo"></aside>
+      </div>
+      <div class="bottom-note"><strong>Nota sobre calidad del agua:</strong> los indicadores de contaminación son referencias ilustrativas y no reemplazan mediciones oficiales ni alertas de organismos competentes. El tiempo local se consulta a Open-Meteo.</div>
+    </section>
+  </main>
+
+  <footer class="footer"><span class="footer-mark">◉</span><span>ALMA · Análisis Local del Medio Ambiente</span><span>Anticipar el clima, proteger nuestros ríos.</span><span class="footer-right">Prototipo educativo · NOAA OISST · Open-Meteo · OSM · <span id="footerClock">—</span></span></footer>
+
+  <script>
+    // Carga las bibliotecas en orden y solo después inicia la aplicación.
+    // El globo es geográfico y requiere descargar Globe.gl y la textura terrestre; no se reemplaza por un dibujo falso.
+    (async function loadALMALibraries() {
+      function loadOne(urls) {
+        return new Promise(resolve => {
+          function attempt(index) {
+            if (index >= urls.length) return resolve(false);
+            const script = document.createElement('script');
+            let settled = false;
+            const timer = setTimeout(() => {
+              if (settled) return;
+              settled = true;
+              script.remove();
+              attempt(index + 1);
+            }, 6000);
+            script.src = urls[index];
+            script.onload = () => { if (settled) return; settled = true; clearTimeout(timer); resolve(true); };
+            script.onerror = () => { if (settled) return; settled = true; clearTimeout(timer); script.remove(); attempt(index + 1); };
+            document.head.appendChild(script);
+          }
+          attempt(0);
+        });
+      }
+      // Globe.gl se carga como bundle UMD con sus dependencias incluidas.
+      await loadOne([
+        'https://cdn.jsdelivr.net/npm/globe.gl@2.45.3/dist/globe.gl.min.js',
+        'https://unpkg.com/globe.gl@2.45.3/dist/globe.gl.min.js',
+        'https://cdn.jsdelivr.net/npm/globe.gl/dist/globe.gl.min.js'
+      ]);
+      await loadOne([
+        'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js',
+        'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js'
+      ]);
+      const app = document.createElement('script');
+      app.src = 'app.js';
+      document.body.appendChild(app);
+    })();
+  </script>
+</body>
+</html>
